@@ -67,15 +67,23 @@ public class BlockUtils {
     }
 
     public static boolean place(BlockPos blockPos, FindItemResult findItemResult, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack) {
+        return place(blockPos, findItemResult, rotate, rotationPriority, swingHand, checkEntities, swapBack, false);
+    }
+
+    public static boolean place(BlockPos blockPos, FindItemResult findItemResult, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyTopSlabs) {
         if (findItemResult.isOffhand()) {
-            return place(blockPos, Hand.OFF_HAND, mc.player.getInventory().selectedSlot, rotate, rotationPriority, swingHand, checkEntities, swapBack);
+            return place(blockPos, Hand.OFF_HAND, mc.player.getInventory().selectedSlot, rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyTopSlabs);
         } else if (findItemResult.isHotbar()) {
-            return place(blockPos, Hand.MAIN_HAND, findItemResult.slot(), rotate, rotationPriority, swingHand, checkEntities, swapBack);
+            return place(blockPos, Hand.MAIN_HAND, findItemResult.slot(), rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyTopSlabs);
         }
         return false;
     }
 
     public static boolean place(BlockPos blockPos, Hand hand, int slot, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack) {
+        return place(blockPos, hand, slot, rotate, rotationPriority, swingHand, checkEntities, swapBack, false);
+    }
+
+    public static boolean place(BlockPos blockPos, Hand hand, int slot, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyTopSlabs) {
         if (slot < 0 || slot > 8) return false;
         if (!canPlace(blockPos, checkEntities)) return false;
 
@@ -90,6 +98,17 @@ public class BlockUtils {
         } else {
             neighbour = blockPos.offset(side);
             hitPos = hitPos.add(side.getOffsetX() * 0.5, side.getOffsetY() * 0.5, side.getOffsetZ() * 0.5);
+
+
+            // now this just works for only top slabs
+
+            if(onlyTopSlabs) {
+                // this then makes settting ONLY top slabs, so prevent setting
+                // bottom slab when jump
+                if(hitPos.y % 1 == 0) return false;
+
+                hitPos = hitPos.add(0, 0.25, 0);
+            }
         }
 
         BlockHitResult bhr = new BlockHitResult(hitPos, side.getOpposite(), neighbour, false);

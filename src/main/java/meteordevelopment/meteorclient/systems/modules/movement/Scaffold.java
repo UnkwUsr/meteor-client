@@ -18,6 +18,7 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
+import net.minecraft.block.SlabBlock;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
@@ -43,6 +44,13 @@ public class Scaffold extends Module {
         .name("blocks-filter")
         .description("How to use the block list setting")
         .defaultValue(ListMode.Blacklist)
+        .build()
+    );
+
+    private final Setting<Boolean> useSlabs = sgGeneral.add(new BoolSetting.Builder()
+        .name("use-slabs")
+        .description("Use slabs (currently just ignores selected list)")
+        .defaultValue(false)
         .build()
     );
 
@@ -275,6 +283,9 @@ public class Scaffold extends Module {
 
         Block block = ((BlockItem) itemStack.getItem()).getBlock();
 
+        // TODO: now it not checks for FallingBlock
+        if (useSlabs.get()) return block instanceof SlabBlock;
+
         if (blocksFilter.get() == ListMode.Blacklist && blocks.get().contains(block)) return false;
         else if (blocksFilter.get() == ListMode.Whitelist && !blocks.get().contains(block)) return false;
 
@@ -288,7 +299,7 @@ public class Scaffold extends Module {
 
         if (item.getHand() == null && !autoSwitch.get()) return false;
 
-        if (BlockUtils.place(bp, item, rotate.get(), 50, renderSwing.get(), true)) {
+        if (BlockUtils.place(bp, item, rotate.get(), 50, renderSwing.get(), true, true, useSlabs.get())) {
             // Render block if was placed
             if (render.get())
                 RenderUtils.renderTickingBlock(bp.toImmutable(), sideColor.get(), lineColor.get(), shapeMode.get(), 0, 8, true, false);
