@@ -18,8 +18,10 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.FallingBlock;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -189,6 +191,9 @@ public class Scaffold extends Module {
         if (airPlace.get()) {
             Vec3d vec = mc.player.getPos().add(mc.player.getVelocity()).add(0, -0.5f, 0);
             bp.set(vec.getX(), vec.getY(), vec.getZ());
+        } else if (useSlabs.get() && isBottomSlab(mc.player.getBlockPos())) {
+            bp.set(mc.player.getBlockPos());
+            prevBp.set(bp);
         } else if (BlockUtils.getPlaceSide(mc.player.getBlockPos().down()) != null) {
             bp.set(mc.player.getBlockPos().down());
         } else {
@@ -222,9 +227,10 @@ public class Scaffold extends Module {
 
             Vec3d sub = pos.subtract(vecPrevBP);
             Direction facing;
-            if (sub.getY() < -0.5f) {
+            // not sure about this, but works
+            if (!useSlabs.get() && sub.getY() < -0.5f) {
                 facing = Direction.DOWN;
-            } else if (sub.getY() > 0.5f) {
+            } else if (!useSlabs.get() && sub.getY() > 0.5f) {
                 facing = Direction.UP;
             } else facing = Direction.getFacing(sub.getX(), 0, sub.getZ());
 
@@ -272,6 +278,16 @@ public class Scaffold extends Module {
                 prevBp.set(bp);
             }
         }
+    }
+
+    private boolean isBottomSlab(BlockPos bp) {
+        BlockState playerBlockState = mc.world.getBlockState(bp);
+        if(playerBlockState.getBlock() instanceof SlabBlock) {
+            if(playerBlockState.get(SlabBlock.TYPE) == SlabType.BOTTOM) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean scaffolding() {

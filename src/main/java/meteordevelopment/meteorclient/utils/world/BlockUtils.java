@@ -70,11 +70,11 @@ public class BlockUtils {
         return place(blockPos, findItemResult, rotate, rotationPriority, swingHand, checkEntities, swapBack, false);
     }
 
-    public static boolean place(BlockPos blockPos, FindItemResult findItemResult, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyTopSlabs) {
+    public static boolean place(BlockPos blockPos, FindItemResult findItemResult, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyBottomSlabs) {
         if (findItemResult.isOffhand()) {
-            return place(blockPos, Hand.OFF_HAND, mc.player.getInventory().selectedSlot, rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyTopSlabs);
+            return place(blockPos, Hand.OFF_HAND, mc.player.getInventory().selectedSlot, rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyBottomSlabs);
         } else if (findItemResult.isHotbar()) {
-            return place(blockPos, Hand.MAIN_HAND, findItemResult.slot(), rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyTopSlabs);
+            return place(blockPos, Hand.MAIN_HAND, findItemResult.slot(), rotate, rotationPriority, swingHand, checkEntities, swapBack, onlyBottomSlabs);
         }
         return false;
     }
@@ -83,9 +83,9 @@ public class BlockUtils {
         return place(blockPos, hand, slot, rotate, rotationPriority, swingHand, checkEntities, swapBack, false);
     }
 
-    public static boolean place(BlockPos blockPos, Hand hand, int slot, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyTopSlabs) {
+    public static boolean place(BlockPos blockPos, Hand hand, int slot, boolean rotate, int rotationPriority, boolean swingHand, boolean checkEntities, boolean swapBack, boolean onlyBottomSlabs) {
         if (slot < 0 || slot > 8) return false;
-        if (!canPlace(blockPos, checkEntities)) return false;
+        if (!canPlace(blockPos, checkEntities, onlyBottomSlabs)) return false;
 
         Vec3d hitPos = Vec3d.ofCenter(blockPos);
 
@@ -100,14 +100,22 @@ public class BlockUtils {
             hitPos = hitPos.add(side.getOffsetX() * 0.5, side.getOffsetY() * 0.5, side.getOffsetZ() * 0.5);
 
 
-            // now this just works for only top slabs
+            if(onlyBottomSlabs) {
+                // I think that was because neighbour was bad. Now this is HACK HACK
+                // neighbour = blockPos.add(0, 1, 0).offset(side);
 
-            if(onlyTopSlabs) {
                 // this then makes settting ONLY top slabs, so prevent setting
                 // bottom slab when jump
-                if(hitPos.y % 1 == 0) return false;
+                // P.S. this prevents placing slabs when jumping
+                // UPD: ok, we don't need this for bottom slab, cuz if fucks
+                // when we walking from full block
+                // if(hitPos.y % 1 == 0) return false;
 
-                hitPos = hitPos.add(0, 0.25, 0);
+                // TODO: current bug: when on under place where we want place
+                // block there is full block, we cant. In other words, it can't
+                // place above full blocks
+
+                hitPos = hitPos.add(0, -0.25, 0);
             }
         }
 
@@ -148,6 +156,10 @@ public class BlockUtils {
     }
 
     public static boolean canPlace(BlockPos blockPos, boolean checkEntities) {
+        return canPlace(blockPos, checkEntities, false);
+    }
+
+    public static boolean canPlace(BlockPos blockPos, boolean checkEntities, boolean onlyBottomSlabs) {
         if (blockPos == null) return false;
 
         // Check y level
@@ -156,8 +168,15 @@ public class BlockUtils {
         // Check if current block is replaceable
         if (!mc.world.getBlockState(blockPos).isReplaceable()) return false;
 
+        BlockState testBlock = null;
+        if(onlyBottomSlabs) {
+            testBlock = Blocks.COBBLESTONE_SLAB.getDefaultState().with(SlabBlock.TYPE, SlabType.BOTTOM);
+        } else {
+            testBlock = Blocks.OBSIDIAN.getDefaultState();
+        }
+
         // Check if intersects entities
-        return !checkEntities || mc.world.canPlace(Blocks.OBSIDIAN.getDefaultState(), blockPos, ShapeContext.absent());
+        return !checkEntities || mc.world.canPlace(testBlock, blockPos, ShapeContext.absent());
     }
 
     public static boolean canPlace(BlockPos blockPos) {
